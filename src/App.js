@@ -1,35 +1,48 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import InfiniteScroll from "react-infinite-scroller";
 import "./App.css";
 
-async function getPersons(setPersons, page) {
-  const { results: persons } = await (
-    await fetch("https://randomuser.me/api?results=100")
-  ).json();
-  console.log(persons);
-  const { data: catFacts, ...rest } = await (
-    await fetch("https://catfact.ninja/facts?limit=100")
-  ).json();
-  console.log(catFacts, rest);
-  const personsAndFacts = persons.reduce(
-    (acc, p, i) => [...acc, { ...p, fact: catFacts[i].fact }],
-    [],
-  );
-  setPersons((p) => [...p, ...personsAndFacts]);
-  return;
+async function getPersons() {
+  try {
+    const { results: persons } = await (
+      await fetch("https://randomuser.me/api?results=100")
+    ).json();
+    const { data: catFacts } = await (
+      await fetch("https://catfact.ninja/facts?limit=100")
+    ).json();
+    const personsAndFacts = persons.reduce(
+      (acc, p, i) => [...acc, { ...p, fact: catFacts[i].fact }],
+      [],
+    );
+    return personsAndFacts;
+  } catch (e) {
+    console.log(e);
+    return [];
+  }
+}
+
+function usePersons() {
+  return useQuery({
+    queryKey: ["persons"],
+    queryFn: getPersons,
+  });
 }
 
 function App() {
   const [persons, setPersons] = useState([]);
-  useEffect(() => {
-    getPersons(setPersons);
-  }, []);
+  const { data, error } = usePersons();
 
-  return (
+  useEffect(() => setPersons(data || []), [data]);
+  return error ? (
+    <div>Error while fetching data</div>
+  ) : (
     <InfiniteScroll
       style={{ width: "50%", background: "#f8fafc" }}
       pageStart={0}
-      loadMore={(page) => getPersons(setPersons, page)}
+      loadMore={() =>
+        getPersons().then((ps) => setPersons((p) => [...p, ...ps]))
+      }
       hasMore={true}
       loader={
         <div className="loader" key={0}>
