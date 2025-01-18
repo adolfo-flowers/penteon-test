@@ -33,7 +33,7 @@ function App() {
   const [persons, setPersons] = useState([]);
   const { data, error } = usePersons();
 
-  useEffect(() => setPersons(data || []), [data]);
+  useEffect(() => setPersons(data || []), []);
   return error ? (
     <div>Error while fetching data</div>
   ) : (
